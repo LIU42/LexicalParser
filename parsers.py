@@ -2,7 +2,7 @@ from automata import FiniteAutomata
 from language import Token
 from language import Error
 from language import ErrorBuilder
-from language import Grammar
+from language import GrammarLoader
 
 class AutomataWrapper:
 
@@ -24,33 +24,28 @@ class AutomataWrapper:
 
     def is_setup(self) -> bool:
         return self.automata is not None
+    
+
+class ParseLineParams:
+
+    def __init__(self, line_no: int, code: str, token_list: list[Token], error_list: list[Error]) -> None:
+        self.line_no = line_no
+        self.code = code
+        self.token_list = token_list
+        self.error_list = error_list
 
 
 class LexicalParser:
 
-    def __init__(self, grammars: dict[str, list[str] | dict[str, list[str] | str]]) -> None:
+    def __init__(self, grammar_loader: GrammarLoader = GrammarLoader()) -> None:
         self.constants_automata = FiniteAutomata(
-            Grammar(
-                grammars["constants"]["formulas"],
-                grammars["alias"],
-                grammars["constants"]["start"],
-                grammars["constants"]["end"]
-            )
+            grammar_loader.load_automata_grammar("constants")
         )
         self.identifiers_automata = FiniteAutomata(
-            Grammar(
-                grammars["identifiers"]["formulas"],
-                grammars["alias"],
-                grammars["identifiers"]["start"],
-                grammars["identifiers"]["end"]
-            )
+            grammar_loader.load_automata_grammar("identifiers")
         )
+        self.symbols = grammar_loader.load_symbol_grammar()
         self.current_automata_wrapper = AutomataWrapper()
-        self.keywords = grammars["keywords"]
-        self.operators = grammars["operators"]
-        self.bounds = grammars["bounds"]
-        self.spaces = grammars["spaces"]
-        self.constants_specials = grammars["constants"]["specials"]
 
     def __call__(self, input_codes: list[str]) -> tuple[list[Token], list[Error]]:
         return self.parse(input_codes)
@@ -62,19 +57,19 @@ class LexicalParser:
             self.current_automata_wrapper.setup(self.constants_automata, "constants")
        
     def parse_operators(self, code: str, index: int) -> str:
-        for operator in self.operators:
+        for operator in self.symbols.operators:
             if code[index:index + len(operator)] == operator:
                 return operator
         return None
     
     def parse_bounds(self, code: str, index: int) -> str:
-        for bound in self.bounds:
+        for bound in self.symbols.bounds:
             if code[index:index + len(bound)] == bound:
                 return bound
         return None
     
     def parse_spaces(self, code: str, index: int) -> str:
-        for space in self.spaces:
+        for space in self.symbols.spaces:
             if code[index:index + len(space)] == space:
                 return space
         return None
@@ -90,47 +85,66 @@ class LexicalParser:
     
     def type_recheck(self, word: str) -> str:
         if self.current_automata_wrapper.type_name == "identifiers":
-            if word in self.keywords:
+            if word in self.symbols.keywords:
                 return "keywords"
-            if word in self.constants_specials:
+            if word in self.symbols.constants_specials:
                 return "constants"
         return self.current_automata_wrapper.type_name
     
     def constants_error_precheck(self, code: str, index: int) -> bool:
         return self.current_automata_wrapper.type_name == "constants" and not self.parse_enumerable_symbols(code, index)[0]
+    
+    def handle_enumerable_parse(self, params: ParseLineParams, current_index: int) -> int:
+        token_list = params.token_list
+        error_list = params.error_list
+        success, symbol_type, symbol = self.parse_enumerable_symbols(params.code, current_index)
+
+        if success:
+            if symbol_type != "spaces":
+                token_list.append(Token(params.line_no, current_index, symbol_type, symbol))
+            current_index += len(symbol)
+        else:
+            error_list.append(ErrorBuilder.unexpected(params.line_no, current_index))
+            current_index += 1
+
+        return current_index
+    
+    def handle_transform_failure(self, params: ParseLineParams, current_index: int, current_word: str) -> None:
+        token_list = params.token_list
+        error_list = params.error_list
+        word_index = current_index - len(current_word)
+
+        if self.current_automata_wrapper.automata.is_finished():
+            token_list.append(Token(params.line_no, word_index, self.type_recheck(current_word), current_word))
+
+            if self.constants_error_precheck(params.code, current_index):
+                error_list.append(ErrorBuilder.invalid(params.line_no, word_index, "constants"))
+        else:
+            error_list.append(ErrorBuilder.invalid(params.line_no, word_index, self.current_automata_wrapper.type_name))
 
     def parse_line(self, line_no: int, code: str, token_list: list[Token], error_list: list[Error]) -> None:
-        index = 0
-        word = ""
-        while index < len(code):
+        current_index = 0
+        current_word = ""
+
+        while current_index < len(code):
             if not self.current_automata_wrapper.is_setup():
-                self.allocate_automata(code[index])
+                self.allocate_automata(code[current_index])
+
+            params = ParseLineParams(line_no, code, token_list, error_list)
             if not self.current_automata_wrapper.is_setup():
-                success, symbol_type, symbol = self.parse_enumerable_symbols(code, index)
-                if success:
-                    if symbol_type != "spaces":
-                        token_list.append(Token(line_no, index, symbol_type, symbol))
-                    index += len(symbol)
-                else:
-                    error_list.append(ErrorBuilder.unexpected(line_no, index))
-                    index += 1
-            elif self.current_automata_wrapper.automata.transform(code[index]):
-                word += code[index]
-                index += 1
+                current_index = self.handle_enumerable_parse(params, current_index)
+
+            elif self.current_automata_wrapper.automata.transform(code[current_index]):
+                current_word += code[current_index]
+                current_index += 1
             else:
-                if self.current_automata_wrapper.automata.is_finished():
-                    token_list.append(Token(line_no, index - len(word), self.type_recheck(word), word))
-                    if self.constants_error_precheck(code, index):
-                        error_list.append(ErrorBuilder.invalid(line_no, index - len(word), "constants"))
-                else:
-                    error_list.append(ErrorBuilder.invalid(line_no, index - len(word), self.current_automata_wrapper.type_name))
-                word = ""
+                self.handle_transform_failure(params, current_index, current_word)
+                current_word = ""
                 self.current_automata_wrapper.reset()
 
     def parse(self, input_codes: list[str]) -> tuple[list[Token], list[Error]]:
         token_list = list[Token]()
         error_list = list[Error]()
-
         for line_no, code in enumerate(input_codes, start = 1):
-            self.parse_line(line_no, code, token_list, error_list)
+            self.parse_line(line_no, code, token_list, error_list)        
         return token_list, error_list

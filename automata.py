@@ -1,36 +1,34 @@
 from language import FormulaParser
-from language import Grammar
+from language import AutomataGrammar
 
 from transforms import NFATransforms
 from transforms import DFATransforms
 
-from status import StatusSetMap
-from status import StatusSetBuffer
+from status import StatusNumberDict
 from status import StatusSetUtils
 
 class FiniteAutomata:
 
-    def __init__(self, grammar: Grammar) -> None:
+    def __init__(self, grammar: AutomataGrammar) -> None:
         self.transforms = self.ensure(self.create(grammar))
         self.current_status = self.transforms.start_status
 
-    def create(self, grammar: Grammar) -> NFATransforms:
+    def create(self, grammar: AutomataGrammar) -> NFATransforms:
         nfa_transforms = NFATransforms(grammar.start_symbol, grammar.end_symbol)
         for formula in grammar.formulas:
             FormulaParser.parse(formula.strip(), grammar, nfa_transforms)
         return nfa_transforms
     
     def ensure(self, nfa_transforms: NFATransforms) -> DFATransforms:
-        start_status = nfa_transforms.get_epsilon_closure(StatusSetUtils.create_by_items(nfa_transforms.start_status))
-        status_map = StatusSetMap()
-        status_map.if_add(start_status)
-        status_buffer = StatusSetBuffer(status_map.number_map.keys())
-
         dfa_transforms = DFATransforms()
         nfa_transforms.get_characters()
 
+        status_dict = StatusNumberDict()
+        status_dict.try_add(nfa_transforms.get_epsilon_closure(StatusSetUtils.create_by_items(nfa_transforms.start_status)))
+
+        status_buffer = set[frozenset[str]](status_dict.number_dict.keys())
         while len(status_buffer) > 0:
-            new_status_sets = status_buffer.copy_items()
+            new_status_sets = status_buffer.copy()
             status_buffer.clear()
 
             for status in new_status_sets:
@@ -38,11 +36,11 @@ class FiniteAutomata:
                     next_status = nfa_transforms.get_next_status(status, char)
                     if len(next_status) == 0:
                         continue
-                    if status_map.if_add(next_status):
-                        status_buffer.add_item(next_status)
-                    dfa_transforms.add_transform(status_map[status], char, status_map[next_status])
+                    if status_dict.try_add(next_status):
+                        status_buffer.add(next_status)
+                    dfa_transforms.add_transform(status_dict[status], char, status_dict[next_status])
 
-        for status, index in status_map.number_map.items():
+        for status, index in status_dict.number_dict.items():
             if nfa_transforms.start_status in status:
                 dfa_transforms.start_status = index
             elif nfa_transforms.end_status in status:
@@ -57,7 +55,7 @@ class FiniteAutomata:
         try:
             self.current_status = self.transforms[self.current_status, char]
             return True
-        except:
+        except KeyError:
             return False
         
     def try_transform(self, char: str) -> bool:

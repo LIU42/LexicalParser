@@ -1,12 +1,10 @@
-import json
-
+from language import GrammarLoader
 from parsers import LexicalParser
 
 class MainProgram:
 
-    def __init__(self, grammar_path: str = "./grammars/grammar.json") -> None:
-        with open(grammar_path, "r", encoding = "utf-8") as grammar_file:
-            self.parser = LexicalParser(json.load(grammar_file))
+    def __init__(self) -> None:
+        self.parser = LexicalParser(GrammarLoader())
 
     def parse_file(self, input_path: str = "./inputs/input1.txt", output_path: str = "./outputs/output1.txt") -> None:
         with open(input_path, "r", encoding = "utf-8") as input_file:
