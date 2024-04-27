@@ -143,8 +143,8 @@ class LexicalParser:
                 self.current_automata_wrapper.reset()
 
     def parse(self, input_codes: list[str]) -> tuple[list[Token], list[Error]]:
-        token_list = list[Token]()
-        error_list = list[Error]()
+        token_list = list()
+        error_list = list()
         for line_no, code in enumerate(input_codes, start = 1):
             self.parse_line(line_no, code, token_list, error_list)        
         return token_list, error_list

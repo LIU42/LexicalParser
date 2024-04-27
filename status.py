@@ -2,13 +2,13 @@ class StatusSetUtils:
 
     @staticmethod
     def create_by_items(*status: str) -> set[str]:
-        return set[str](status)
+        return set(status)
     
 
 class StatusNumberDict:
 
     def __init__(self) -> None:
-        self.number_dict = dict[frozenset[str], int]()
+        self.number_dict = dict()
         self.status_count = 0
 
     def __getitem__(self, status_set: frozenset[str]) -> int:

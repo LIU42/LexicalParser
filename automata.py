@@ -26,7 +26,7 @@ class FiniteAutomata:
         status_dict = StatusNumberDict()
         status_dict.try_add(nfa_transforms.get_epsilon_closure(StatusSetUtils.create_by_items(nfa_transforms.start_status)))
 
-        status_buffer = set[frozenset[str]](status_dict.number_dict.keys())
+        status_buffer = set(status_dict.number_dict.keys())
         while len(status_buffer) > 0:
             new_status_sets = status_buffer.copy()
             status_buffer.clear()
@@ -40,11 +40,11 @@ class FiniteAutomata:
                         status_buffer.add(next_status)
                     dfa_transforms.add_transform(status_dict[status], char, status_dict[next_status])
 
-        for status, index in status_dict.number_dict.items():
+        for status, number in status_dict.number_dict.items():
             if nfa_transforms.start_status in status:
-                dfa_transforms.start_status = index
+                dfa_transforms.start_status = number
             elif nfa_transforms.end_status in status:
-                dfa_transforms.end_status.add(index)
+                dfa_transforms.end_status.add(number)
 
         return dfa_transforms
     
