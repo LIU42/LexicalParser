@@ -58,13 +58,10 @@ class NFATransforms:
 
 class DFATransforms:
 
-    def __init__(self, start_status: int = None, end_status: set[int] = None) -> None:
+    def __init__(self) -> None:
         self.transforms = dict()
-        self.start_status = start_status
-        if end_status is None:
-            self.end_status = set()
-        else:
-            self.end_status = end_status
+        self.start_status = 0
+        self.end_status = set()
 
     def __getitem__(self, transform_index: tuple[int, str]) -> int:
         return self.get_transform(*transform_index)

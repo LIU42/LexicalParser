@@ -91,7 +91,7 @@ class LexicalParser:
                 return "constants"
         return self.current_automata_wrapper.type_name
     
-    def constants_error_precheck(self, code: str, index: int) -> bool:
+    def invalid_error_aftercheck(self, code: str, index: int) -> bool:
         return self.current_automata_wrapper.type_name == "constants" and not self.parse_enumerable_symbols(code, index)[0]
     
     def handle_enumerable_parse(self, params: ParseLineParams, current_index: int) -> int:
@@ -114,11 +114,8 @@ class LexicalParser:
         error_list = params.error_list
         word_index = current_index - len(current_word)
 
-        if self.current_automata_wrapper.automata.is_finished():
+        if self.current_automata_wrapper.automata.is_finished() and not self.invalid_error_aftercheck(params.code, current_index):
             token_list.append(Token(params.line_no, word_index, self.type_recheck(current_word), current_word))
-
-            if self.constants_error_precheck(params.code, current_index):
-                error_list.append(ErrorBuilder.invalid(params.line_no, word_index, "constants"))
         else:
             error_list.append(ErrorBuilder.invalid(params.line_no, word_index, self.current_automata_wrapper.type_name))
 
