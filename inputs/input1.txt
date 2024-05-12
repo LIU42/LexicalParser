@@ -1,4 +1,4 @@
-int main()
+int main(int argc, char* argv[])
 {
     int num1 = 125;
     int num2 = 586;
@@ -16,7 +16,9 @@ int main()
 
     if (num1 != num2)
     {
+        complex comNum_Res = (15+43i+114.71)*1.5-2i-1.2E-5;
         printf(num1 + sizeof(num2));
+        printf(comNum_Res);
     }
     for (int i = 0; i < 15; i++)
     {

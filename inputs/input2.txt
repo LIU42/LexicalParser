@@ -48,10 +48,22 @@ int main(int argc, char* argv[])
     student1.age = 20;
     student1.sex = MALE;
 
-    struct Student student2;
-    student2.name = "YYY";
-    student2.age = 105;
-    student2.sex = FEMALE;
+    struct Student student2 = {
+        .name = "YYY",
+        .sex = FEMALE,
+        .age = 105,
+    };
+
+    struct Student student3 = {
+        "ZZZ",
+        48,
+        MALE,
+    };
+
+    struct Student* pStudent4 = (struct Student*)malloc(sizeof(struct Student));
+    pStudent4->name = "ABCDEFG";
+    pStudent4->age = 18;
+    pStudent4->sex = FEMALE;
 
     if (exam(&student1, 40) > 60)
     {
@@ -80,5 +92,6 @@ int main(int argc, char* argv[])
         case FEMALE: student1.age += 100; break;
         default: printf("Hello\n"); break;
     }
+    free(pStudent4);
     return 0;
 }
