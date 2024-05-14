@@ -15,14 +15,14 @@ class NFATransforms:
     def get_transform(self, status_from: str, char: str) -> set[str]:
         return self.transforms[status_from][char]
 
-    def get_characters(self) -> set[str]:
+    def get_characters(self, epsilon: str = "ε") -> set[str]:
         for transforms in self.transforms.values():
             for char in transforms.keys():
-                if char != "ε":
+                if char != epsilon:
                     self.all_characters.add(char)
         return self.all_characters
 
-    def get_epsilon_closure(self, status_set: set[str]) -> frozenset[str]:
+    def get_epsilon_closure(self, status_set: set[str], epsilon: str = "ε") -> frozenset[str]:
         closure_status_set = status_set.copy()
         status_buffer = closure_status_set.copy()
 
@@ -31,9 +31,9 @@ class NFATransforms:
             status_buffer.clear()
 
             for status in new_status_set:
-                if self.transforms.get(status) is None or self.transforms[status].get("ε") is None:
+                if status not in self.transforms or epsilon not in self.transforms[status]:
                     continue
-                for status_to in self.transforms[status]["ε"]:
+                for status_to in self.transforms[status][epsilon]:
                     if status_to not in closure_status_set:
                         status_buffer.add(status_to)
 
@@ -46,7 +46,7 @@ class NFATransforms:
     def get_move_status(self, status_set: set[str], search_char: str) -> set[str]:
         move_status_set = set()
         for status in status_set:
-            if self.transforms.get(status) is None or self.transforms[status].get(search_char) is None:
+            if status not in self.transforms or search_char not in self.transforms[status]:
                 continue
             for status_to in self.transforms[status][search_char]:
                 move_status_set.add(status_to)
@@ -73,7 +73,4 @@ class DFATransforms:
         return self.transforms[status_from][char]
 
     def is_transform_exist(self, status_from: int, char: str) -> bool:
-        try:
-            return self.transforms[status_from][char] is not None
-        except KeyError:
-            return False
+        return status_from in self.transforms and char in self.transforms[status_from]

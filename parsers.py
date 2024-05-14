@@ -9,7 +9,6 @@ class AutomataWrapper:
     def __init__(self, automata: FiniteAutomata = None, type_name: str = None) -> None:
         self.automata = automata
         self.type_name = type_name
-        self.last_type_name = type_name
 
     def setup(self, automata: FiniteAutomata, type_name: str) -> None:
         self.automata = automata
@@ -19,7 +18,6 @@ class AutomataWrapper:
         if self.automata is not None:
             self.automata.reset()
             self.automata = None
-            self.last_type_name = self.type_name
             self.type_name = None
 
     def is_setup(self) -> bool:
@@ -37,7 +35,7 @@ class ParseLineParams:
 
 class LexicalParser:
 
-    def __init__(self, grammar_loader: GrammarLoader = GrammarLoader()) -> None:
+    def __init__(self, grammar_loader: GrammarLoader = None) -> None:
         self.constants_automata = FiniteAutomata(
             grammar_loader.load_automata_grammar("constants")
         )
@@ -119,20 +117,19 @@ class LexicalParser:
         else:
             error_list.append(ErrorBuilder.invalid(params.line_no, word_index, self.current_automata_wrapper.type_name))
 
-    def parse_line(self, line_no: int, code: str, token_list: list[Token], error_list: list[Error]) -> None:
+    def parse_line(self, params: ParseLineParams) -> None:
         current_index = 0
         current_word = ""
 
-        while current_index < len(code):
+        while current_index < len(params.code):
             if not self.current_automata_wrapper.is_setup():
-                self.allocate_automata(code[current_index])
+                self.allocate_automata(params.code[current_index])
 
-            params = ParseLineParams(line_no, code, token_list, error_list)
             if not self.current_automata_wrapper.is_setup():
                 current_index = self.handle_enumerable_parse(params, current_index)
 
-            elif self.current_automata_wrapper.automata.transform(code[current_index]):
-                current_word += code[current_index]
+            elif self.current_automata_wrapper.automata.transform(params.code[current_index]):
+                current_word += params.code[current_index]
                 current_index += 1
             else:
                 self.handle_transform_failure(params, current_index, current_word)
@@ -143,5 +140,5 @@ class LexicalParser:
         token_list = list()
         error_list = list()
         for line_no, code in enumerate(input_codes, start = 1):
-            self.parse_line(line_no, code, token_list, error_list)        
+            self.parse_line(ParseLineParams(line_no, code, token_list, error_list))        
         return token_list, error_list

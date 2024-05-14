@@ -10,7 +10,7 @@ class MainProgram:
         with open(input_path, "r", encoding = "utf-8") as input_file:
             token_list, error_list = self.parser(input_file.readlines())
             
-        with open(output_path, "w+", encoding = "utf-8") as output_file:
+        with open(output_path, "w", encoding = "utf-8") as output_file:
             if len(error_list) > 0:
                 for error in error_list:
                     output_file.write(f"{error}\n")
