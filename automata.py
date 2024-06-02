@@ -1,11 +1,11 @@
-from language import FormulaParser
 from language import AutomataGrammar
-
-from transforms import NFATransforms
-from transforms import DFATransforms
+from language import FormulaParser
 
 from status import StatusNumberDict
 from status import StatusSetUtils
+
+from transforms import DFATransforms
+from transforms import NFATransforms
 
 class FiniteAutomata:
 

@@ -59,7 +59,7 @@ class SymbolGrammar:
 class GrammarLoader:
 
     def __init__(self, grammar_path: str = "./grammars/grammar.json") -> None:
-        with open(grammar_path, "r", encoding = "utf-8") as grammar_file:
+        with open(grammar_path, mode="r", encoding="utf-8") as grammar_file:
             self.grammar_dict = json.load(grammar_file)
 
     def load_automata_grammar(self, token_type: str = "constants") -> AutomataGrammar:
@@ -85,19 +85,19 @@ class FormulaParser:
     @staticmethod
     def parse(formula: str, grammar: AutomataGrammar, nfa_transforms: NFATransforms) -> None:
         if match_result := re.match(r"(.+?) -> `(.+?)` (.+)", formula):
-            status_from, alias_name, status_to = match_result.groups()
+            last_status, alias_name, next_status = match_result.groups()
             for char in grammar.alias[alias_name]:
-                nfa_transforms.add_transform(status_from, char, status_to)
+                nfa_transforms.add_transform(last_status, char, next_status)
         
         elif match_result := re.match(r"(.+?) -> `(.+?)`", formula):
-            status_from, alias_name = match_result.groups()
+            last_status, alias_name = match_result.groups()
             for char in grammar.alias[alias_name]:
-                nfa_transforms.add_transform(status_from, char, nfa_transforms.end_status)
+                nfa_transforms.add_transform(last_status, char, nfa_transforms.end_status)
 
         elif match_result := re.match(r"(.+?) -> (.) (.+)", formula):
-            status_from, char, status_to = match_result.groups()
-            nfa_transforms.add_transform(status_from, char, status_to)
+            last_status, char, next_status = match_result.groups()
+            nfa_transforms.add_transform(last_status, char, next_status)
 
         elif match_result := re.match(r"(.+?) -> (.)", formula):
-            status_from, char = match_result.groups()
-            nfa_transforms.add_transform(status_from, char, nfa_transforms.end_status)
+            last_status, char = match_result.groups()
+            nfa_transforms.add_transform(last_status, char, nfa_transforms.end_status)

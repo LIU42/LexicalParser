@@ -1,8 +1,8 @@
 from automata import FiniteAutomata
-from language import Token
 from language import Error
 from language import ErrorBuilder
 from language import GrammarLoader
+from language import Token
 
 class AutomataWrapper:
 

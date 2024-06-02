@@ -33,9 +33,9 @@ class NFATransforms:
             for status in new_status_set:
                 if status not in self.transforms or epsilon not in self.transforms[status]:
                     continue
-                for status_to in self.transforms[status][epsilon]:
-                    if status_to not in closure_status_set:
-                        status_buffer.add(status_to)
+                for next_status in self.transforms[status][epsilon]:
+                    if next_status not in closure_status_set:
+                        status_buffer.add(next_status)
 
             if len(status_buffer) == 0:
                 break
@@ -48,8 +48,8 @@ class NFATransforms:
         for status in status_set:
             if status not in self.transforms or search_char not in self.transforms[status]:
                 continue
-            for status_to in self.transforms[status][search_char]:
-                move_status_set.add(status_to)
+            for next_status in self.transforms[status][search_char]:
+                move_status_set.add(next_status)
         return move_status_set
     
     def get_next_status(self, status_set: set[str], search_char: str) -> frozenset[str]:
