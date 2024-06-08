@@ -1,18 +1,20 @@
 {
     "alias": {
         "letters": [
-            "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
-            "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"
+            "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n",
+            "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+            "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
+            "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"
         ],
         "digits": [
             "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
         ],
-        "nozero": [
+        "nonzero": [
             "1", "2", "3", "4", "5", "6", "7", "8", "9"
         ],
         "others": [
-            "~", "`", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "-", "+", "=", "{", "[", "}", "]", ":", ";", "<", ",", ">", ".",
-            "?", "/", "|", " ", "\\"
+            "~", "`", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "-", "+", "=",
+            "{", "[", "}", "]", ":", ";", "<", ",", ">", ".", "?", "/", "|", " ", "\\"
         ]
     },
     "keywords": [ 
@@ -29,8 +31,8 @@
         "formulas": [
             "[Start] -> 0",
             "[Start] -> 0 [PointLeft(normal)]",
-            "[Start] -> `nozero` [DigitFloat(normal)]",
-            "[Start] -> `nozero` [DigitInt(normal)]",
+            "[Start] -> `nonzero` [DigitFloat(normal)]",
+            "[Start] -> `nonzero` [DigitInt(normal)]",
             "[DigitFloat(normal)] -> `digits` [DigitFloat(normal)]",
             "[DigitFloat(normal)] -> . [PointRight(normal)]",
             "[PointLeft(normal)] -> . [PointRight(normal)]",
@@ -62,8 +64,8 @@
             "[DigitInt(normal)] -> - [Complex]",
             "[Complex] -> 0 [ComplexEnd]",
             "[Complex] -> 0 [PointLeft(complex)]",
-            "[Complex] -> `nozero` [DigitFloat(complex)]",
-            "[Complex] -> `nozero` [DigitInt(complex)]",
+            "[Complex] -> `nonzero` [DigitFloat(complex)]",
+            "[Complex] -> `nonzero` [DigitInt(complex)]",
             "[DigitFloat(complex)] -> `digits` [DigitFloat(complex)]",
             "[DigitFloat(complex)] -> . [PointRight(complex)]",
             "[PointLeft(complex)] -> . [PointRight(complex)]",
@@ -89,9 +91,10 @@
     },
     "operators": [
         "<<=",  ">>=",
-        "++",   "--",   ">=",   "<=",   "==",   "!=",   "&&",   "||",   "<<",   ">>",   "+=",   "-=",   "*=",   "/=",   "%=",   "&=",
-        "|=",   "^=",   "->",
-        "=",    "+",    "-",    "*",    "/",    "%",    ">",    "<",    "!",    "&",    "|",    "^",    ",",    "?",    ":",    "."
+        "++",   "--",   ">=",   "<=",   "==",   "!=",   "&&",   "||",   "<<",   ">>",
+        "+=",   "-=",   "*=",   "/=",   "%=",   "&=",   "|=",   "^=",   "->",
+        "=",    "+",    "-",    "*",    "/",    "%",    ">",    "<",    "!",    "&",
+        "|",    "^",    ",",    "?",    ":",    "."
     ],
     "bounds": [
         ";",    "(",    ")",    "[",    "]",    "{",    "}"

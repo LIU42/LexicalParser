@@ -4,6 +4,7 @@ from language import ErrorBuilder
 from language import GrammarLoader
 from language import Token
 
+
 class AutomataWrapper:
 
     def __init__(self, automata: FiniteAutomata = None, type_name: str = None) -> None:
@@ -22,7 +23,7 @@ class AutomataWrapper:
 
     def is_setup(self) -> bool:
         return self.automata is not None
-    
+
 
 class ParseLineParams:
 
@@ -37,41 +38,41 @@ class LexicalParser:
 
     def __init__(self, grammar_loader: GrammarLoader = None) -> None:
         self.constants_automata = FiniteAutomata(
-            grammar_loader.load_automata_grammar("constants")
+            grammar=grammar_loader.load_automata_grammar("constants")
         )
         self.identifiers_automata = FiniteAutomata(
-            grammar_loader.load_automata_grammar("identifiers")
+            grammar=grammar_loader.load_automata_grammar("identifiers")
         )
         self.symbols = grammar_loader.load_symbol_grammar()
         self.current_automata_wrapper = AutomataWrapper()
 
     def __call__(self, input_codes: list[str]) -> tuple[list[Token], list[Error]]:
         return self.parse(input_codes)
-    
+
     def allocate_automata(self, char: str) -> None:
         if self.identifiers_automata.try_transform(char):
             self.current_automata_wrapper.setup(self.identifiers_automata, "identifiers")
         elif self.constants_automata.try_transform(char):
             self.current_automata_wrapper.setup(self.constants_automata, "constants")
-       
+
     def parse_operators(self, code: str, index: int) -> str:
         for operator in self.symbols.operators:
             if code[index:index + len(operator)] == operator:
                 return operator
         return None
-    
+
     def parse_bounds(self, code: str, index: int) -> str:
         for bound in self.symbols.bounds:
             if code[index:index + len(bound)] == bound:
                 return bound
         return None
-    
+
     def parse_spaces(self, code: str, index: int) -> str:
         for space in self.symbols.spaces:
             if code[index:index + len(space)] == space:
                 return space
         return None
-    
+
     def parse_enumerable_symbols(self, code: str, index: int) -> tuple[bool, str, str]:
         if space := self.parse_spaces(code, index):
             return True, "spaces", space
@@ -80,7 +81,7 @@ class LexicalParser:
         if operator := self.parse_operators(code, index):
             return True, "operators", operator
         return False, None, None
-    
+
     def type_recheck(self, word: str) -> str:
         if self.current_automata_wrapper.type_name == "identifiers":
             if word in self.symbols.keywords:
@@ -88,10 +89,10 @@ class LexicalParser:
             if word in self.symbols.constants_specials:
                 return "constants"
         return self.current_automata_wrapper.type_name
-    
+
     def invalid_error_aftercheck(self, code: str, index: int) -> bool:
         return self.current_automata_wrapper.type_name == "constants" and not self.parse_enumerable_symbols(code, index)[0]
-    
+
     def handle_enumerable_parse(self, params: ParseLineParams, current_index: int) -> int:
         token_list = params.token_list
         error_list = params.error_list
@@ -106,7 +107,7 @@ class LexicalParser:
             current_index += 1
 
         return current_index
-    
+
     def handle_transform_failure(self, params: ParseLineParams, current_index: int, current_word: str) -> None:
         token_list = params.token_list
         error_list = params.error_list
@@ -139,6 +140,6 @@ class LexicalParser:
     def parse(self, input_codes: list[str]) -> tuple[list[Token], list[Error]]:
         token_list = list()
         error_list = list()
-        for line_no, code in enumerate(input_codes, start = 1):
-            self.parse_line(ParseLineParams(line_no, code, token_list, error_list))        
+        for line_no, code in enumerate(input_codes, start=1):
+            self.parse_line(ParseLineParams(line_no, code, token_list, error_list))
         return token_list, error_list

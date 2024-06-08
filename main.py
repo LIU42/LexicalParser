@@ -1,6 +1,7 @@
 from language import GrammarLoader
 from parsers import LexicalParser
 
+
 def parse_file(parser: LexicalParser, input_path: str, output_path: str) -> None:
     with open(input_path, mode="r", encoding="utf-8") as input_file:
         token_list, error_list = parser(input_file.readlines())

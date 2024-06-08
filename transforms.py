@@ -9,11 +9,11 @@ class NFATransforms:
     def __getitem__(self, transform_index: tuple[str, int]) -> set[str]:
         return self.get_transform(*transform_index)
 
-    def add_transform(self, status_from: str, char: str, status_to: str) -> None:
-        self.transforms.setdefault(status_from, dict()).setdefault(char, set()).add(status_to)
+    def add_transform(self, last_status: str, char: str, next_status: str) -> None:
+        self.transforms.setdefault(last_status, dict()).setdefault(char, set()).add(next_status)
 
-    def get_transform(self, status_from: str, char: str) -> set[str]:
-        return self.transforms[status_from][char]
+    def get_transform(self, last_status: str, char: str) -> set[str]:
+        return self.transforms[last_status][char]
 
     def get_characters(self, epsilon: str = "ε") -> set[str]:
         for transforms in self.transforms.values():
@@ -66,11 +66,11 @@ class DFATransforms:
     def __getitem__(self, transform_index: tuple[int, str]) -> int:
         return self.get_transform(*transform_index)
     
-    def add_transform(self, status_from: int, char: str, status_to: int) -> None:
-        self.transforms.setdefault(status_from, dict()).setdefault(char, status_to)
+    def add_transform(self, last_status: int, char: str, next_status: int) -> None:
+        self.transforms.setdefault(last_status, dict()).setdefault(char, next_status)
 
-    def get_transform(self, status_from: int, char: str) -> int:
-        return self.transforms[status_from][char]
+    def get_transform(self, last_status: int, char: str) -> int:
+        return self.transforms[last_status][char]
 
-    def is_transform_exist(self, status_from: int, char: str) -> bool:
-        return status_from in self.transforms and char in self.transforms[status_from]
+    def is_transform_exist(self, last_status: int, char: str) -> bool:
+        return last_status in self.transforms and char in self.transforms[last_status]

@@ -3,8 +3,9 @@ import re
 
 from transforms import NFATransforms
 
+
 class Token:
-    
+
     def __init__(self, line_no: int, index: int, type: str, word: str) -> None:
         self.line_no = line_no
         self.index = index
@@ -31,7 +32,7 @@ class ErrorBuilder:
     @staticmethod
     def unexpected(line_no: int, index: int) -> Error:
         return Error(line_no, index, "unexpected symbols")
-    
+
     @staticmethod
     def invalid(line_no: int, index: int, symbol_type: str) -> Error:
         return Error(line_no, index, f"invalid {symbol_type}")
@@ -55,7 +56,7 @@ class SymbolGrammar:
         self.spaces = element_dict["spaces"]
         self.constants_specials = element_dict["constants_specials"]
 
-    
+
 class GrammarLoader:
 
     def __init__(self, grammar_path: str = "./grammars/grammar.json") -> None:
@@ -69,14 +70,14 @@ class GrammarLoader:
             self.grammar_dict[token_type]["start"],
             self.grammar_dict[token_type]["end"]
         )
-    
+
     def load_symbol_grammar(self) -> SymbolGrammar:
         return SymbolGrammar(
-            keywords = self.grammar_dict["keywords"],
-            operators = self.grammar_dict["operators"],
-            bounds = self.grammar_dict["bounds"],
-            spaces = self.grammar_dict["spaces"],
-            constants_specials = self.grammar_dict["constants"]["specials"]
+            keywords=self.grammar_dict["keywords"],
+            operators=self.grammar_dict["operators"],
+            bounds=self.grammar_dict["bounds"],
+            spaces=self.grammar_dict["spaces"],
+            constants_specials=self.grammar_dict["constants"]["specials"]
         )
 
 
@@ -88,7 +89,7 @@ class FormulaParser:
             last_status, alias_name, next_status = match_result.groups()
             for char in grammar.alias[alias_name]:
                 nfa_transforms.add_transform(last_status, char, next_status)
-        
+
         elif match_result := re.match(r"(.+?) -> `(.+?)`", formula):
             last_status, alias_name = match_result.groups()
             for char in grammar.alias[alias_name]:

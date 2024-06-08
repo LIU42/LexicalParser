@@ -7,19 +7,22 @@ from status import StatusSetUtils
 from transforms import DFATransforms
 from transforms import NFATransforms
 
+
 class FiniteAutomata:
 
     def __init__(self, grammar: AutomataGrammar) -> None:
         self.transforms = self.ensure(self.create(grammar))
         self.current_status = self.transforms.start_status
 
-    def create(self, grammar: AutomataGrammar) -> NFATransforms:
+    @staticmethod
+    def create(grammar: AutomataGrammar) -> NFATransforms:
         nfa_transforms = NFATransforms(grammar.start_symbol, grammar.end_symbol)
         for formula in grammar.formulas:
             FormulaParser.parse(formula.strip(), grammar, nfa_transforms)
         return nfa_transforms
-    
-    def ensure(self, nfa_transforms: NFATransforms) -> DFATransforms:
+
+    @staticmethod
+    def ensure(nfa_transforms: NFATransforms) -> DFATransforms:
         dfa_transforms = DFATransforms()
         nfa_transforms.get_characters()
 
@@ -47,19 +50,19 @@ class FiniteAutomata:
                 dfa_transforms.end_status.add(number)
 
         return dfa_transforms
-    
+
     def reset(self) -> None:
         self.current_status = self.transforms.start_status
-    
+
     def transform(self, char: str) -> bool:
         try:
             self.current_status = self.transforms[self.current_status, char]
             return True
         except KeyError:
             return False
-        
+
     def try_transform(self, char: str) -> bool:
         return self.transforms.is_transform_exist(self.current_status, char)
-        
+
     def is_finished(self) -> bool:
         return self.current_status in self.transforms.end_status
