@@ -74,8 +74,8 @@
             "[DigitInt(complex)] -> i",
             "[ComplexEnd] -> i"
         ],
-        "start": "[Start]", 
-        "end": "[End]"
+        "start": "[Start]",
+        "final": "[Final]"
     },
     "identifiers": {
         "formulas": [
@@ -87,7 +87,7 @@
             "[Content] -> ε"
         ],
         "start": "[Start]",
-        "end": "[End]"
+        "final": "[Final]"
     },
     "operators": [
         "<<=",  ">>=",
