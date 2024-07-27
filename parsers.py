@@ -1,179 +1,148 @@
 from automata import FiniteAutomata
-from language import ErrorBuilder
+
+from language import GrammarLoader
 from language import TokenBuilder
+from language import ErrorBuilder
+from language import SymbolBuilder
 
 
-class AutomataWrapper:
+class Automatas:
 
-    def __init__(self, automata=None, type_name=None):
-        self.automata = automata
-        self.type_name = type_name
+    def __init__(self):
+        self.identifiers = FiniteAutomata('identifiers')
+        self.identifiers.build(GrammarLoader.identifiers())
+        self.identifiers.reset()
 
-    def setup(self, automata, type_name):
-        self.automata = automata
-        self.type_name = type_name
+        self.constants = FiniteAutomata('constants')
+        self.constants.build(GrammarLoader.constants())
+        self.constants.reset()
 
-    def reset(self):
-        if self.automata is not None:
-            self.automata.reset()
-            self.automata = None
-            self.type_name = None
+    def allocate(self, char):
+        if self.constants.transform_exist(char):
+            return self.constants
+        if self.identifiers.transform_exist(char):
+            return self.identifiers
+
+
+class StatusManager:
+
+    def __init__(self, line, code):
+        self.line = line
+        self.code = code
+        self.automata = None
+        self.index = 0
+        self.token = ''
+        self.tokens = []
+        self.errors = []
 
     @property
-    def is_setup(self):
-        return self.automata is not None
+    def reached_end(self):
+        return self.index >= len(self.code)
 
     @property
-    def is_finished(self):
-        return self.automata.is_finished
+    def location(self):
+        return self.line, self.index - len(self.token)
 
-    def transform(self, char):
-        return self.automata.transform(char)
+    @property
+    def pending_char(self):
+        return self.code[self.index]
 
+    @property
+    def pending_code(self):
+        return self.code[self.index:]
 
-class ParseLineArgs:
+    def transform_success(self):
+        transform_success = self.automata.transform(self.pending_char)
 
-    def __init__(self, line_code, line_no, token_list, error_list):
-        self.line_code = line_code
-        self.line_no = line_no
-        self.token_list = token_list
-        self.error_list = error_list
+        if transform_success:
+            self.token += self.pending_char
+            self.index += 1
+
+        return transform_success
+
+    def release_automata(self):
+        self.token = ''
+        self.automata.reset()
+        self.automata = None
 
 
 class LexicalParser:
 
-    def __init__(self, grammar_loader):
-        self.constants_automata = FiniteAutomata(
-            grammar_loader.load_automata_grammar('constants')
-        )
-        self.identifiers_automata = FiniteAutomata(
-            grammar_loader.load_automata_grammar('identifiers')
-        )
-        self.symbols = grammar_loader.load_symbol_grammar()
-        self.current_automata_wrapper = AutomataWrapper()
+    def __init__(self):
+        self.symbols = GrammarLoader.symbols()
+        self.automatas = Automatas()
 
-    def __call__(self, input_codes):
-        return self.parse(input_codes)
+    def __call__(self, inputs):
+        tokens = []
+        errors = []
 
-    def allocate_automata(self, char):
-        if self.identifiers_automata.try_transform(char):
-            self.current_automata_wrapper.setup(self.identifiers_automata, 'identifiers')
-        elif self.constants_automata.try_transform(char):
-            self.current_automata_wrapper.setup(self.constants_automata, 'constants')
+        for manager in self.generate_managers(inputs):
+            self.parse_process(manager)
 
-    def parse_operators(self, line_code, index):
-        for operator in self.symbols.operators:
-            if line_code[index:index + len(operator)] == operator:
-                return operator
-        return None
+            tokens.extend(manager.tokens)
+            errors.extend(manager.errors)
 
-    def parse_bounds(self, line_code, index):
-        for bound in self.symbols.bounds:
-            if line_code[index:index + len(bound)] == bound:
-                return bound
-        return None
+        return tokens, errors
 
-    def parse_spaces(self, line_code, index):
-        for space in self.symbols.spaces:
-            if line_code[index:index + len(space)] == space:
-                return space
-        return None
+    @staticmethod
+    def generate_managers(inputs):
+        for line, code in enumerate(inputs, start=1):
+            yield StatusManager(line, code)
 
-    def parse_enumerable_symbols(self, line_code, index):
-        if space := self.parse_spaces(line_code, index):
-            return True, 'spaces', space
-        if bound := self.parse_bounds(line_code, index):
-            return True, 'bounds', bound
-        if operator := self.parse_operators(line_code, index):
-            return True, 'operators', operator
-        return False, None, None
+    @staticmethod
+    def match(manager, symbols):
+        for symbol in filter(manager.pending_code.startswith, symbols):
+            return symbol
 
-    def type_recheck(self, word):
-        if self.current_automata_wrapper.type_name == 'identifiers':
-            if word in self.symbols.keywords:
+    def match_symbols(self, manager):
+        if symbol := self.match(manager, self.symbols.bounds):
+            return SymbolBuilder.bounds(symbol)
+
+        if symbol := self.match(manager, self.symbols.spaces):
+            return SymbolBuilder.spaces(symbol)
+
+        if symbol := self.match(manager, self.symbols.operators):
+            return SymbolBuilder.operators(symbol)
+
+    def parse_symbols(self, manager):
+        symbol = self.match_symbols(manager)
+
+        if symbol is None:
+            manager.errors.append(ErrorBuilder.unexpected(manager.location))
+            manager.index += 1
+        else:
+            if symbol.is_token:
+                manager.tokens.append(TokenBuilder.symbol(manager.location, symbol))
+            manager.index += len(symbol)
+
+    def token_valid(self, manager):
+        return manager.automata.name != 'constants' or self.match_symbols(manager)
+
+    def type_recheck(self, manager):
+        if manager.automata.name == 'identifiers':
+            if manager.token in self.symbols.keywords:
                 return 'keywords'
-            if word in self.symbols.constants_specials:
+            if manager.token in self.symbols.constants_specials:
                 return 'constants'
-        return self.current_automata_wrapper.type_name
+        return manager.automata.name
 
-    def invalid_error_aftercheck(self, line_code, index):
-        if self.current_automata_wrapper.type_name != 'constants':
-            return False
-        return not self.parse_enumerable_symbols(line_code, index)[0]
+    def parse_variables(self, manager):
+        location = manager.location
 
-    def handle_enumerable_parse(self, current_index, parse_args):
-        success, symbol_type, symbol_word = self.parse_enumerable_symbols(parse_args.line_code, current_index)
-
-        if success:
-            if symbol_type != 'spaces':
-                token = TokenBuilder.build(
-                    type=symbol_type,
-                    word=symbol_word,
-                    location=(parse_args.line_no, current_index),
-                )
-                parse_args.token_list.append(token)
-            current_index += len(symbol_word)
+        if manager.automata.reached_final and self.token_valid(manager):
+            manager.tokens.append(TokenBuilder.default(location, self.type_recheck(manager), manager.token))
         else:
-            error = ErrorBuilder.unexpected(
-                location=(parse_args.line_no, current_index),
-            )
-            parse_args.error_list.append(error)
-            current_index += 1
+            manager.errors.append(ErrorBuilder.invalid(location, manager.automata.name))
 
-        return current_index
+        manager.release_automata()
 
-    def is_valid_token_at_transform_failure(self, line_code, current_index):
-        if not self.current_automata_wrapper.is_finished:
-            return False
-        return not self.invalid_error_aftercheck(line_code, current_index)
+    def parse_process(self, manager):
+        while not manager.reached_end:
+            if manager.automata is None:
+                manager.automata = self.automatas.allocate(manager.pending_char)
 
-    def handle_transform_failure(self, current_index, current_word, parse_args):
-        word_index = current_index - len(current_word)
+            if manager.automata is None:
+                self.parse_symbols(manager)
 
-        if self.is_valid_token_at_transform_failure(parse_args.line_code, current_index):
-            token = TokenBuilder.build(
-                type=self.type_recheck(current_word),
-                word=current_word,
-                location=(parse_args.line_no, word_index),
-            )
-            parse_args.token_list.append(token)
-        else:
-            error = ErrorBuilder.invalid(
-                type=self.current_automata_wrapper.type_name,
-                location=(parse_args.line_no, word_index),
-            )
-            parse_args.error_list.append(error)
-
-    def parse_line(self, parse_args):
-        current_index = 0
-        current_word = ''
-
-        while current_index < len(parse_args.line_code):
-            if not self.current_automata_wrapper.is_setup:
-                self.allocate_automata(parse_args.line_code[current_index])
-
-            if not self.current_automata_wrapper.is_setup:
-                current_index = self.handle_enumerable_parse(current_index, parse_args)
-
-            elif self.current_automata_wrapper.transform(parse_args.line_code[current_index]):
-                current_word += parse_args.line_code[current_index]
-                current_index += 1
-            else:
-                self.handle_transform_failure(current_index, current_word, parse_args)
-                current_word = ''
-                self.current_automata_wrapper.reset()
-
-    def parse(self, input_codes):
-        token_list = list()
-        error_list = list()
-
-        for line_no, line_code in enumerate(input_codes, start=1):
-            parse_args = ParseLineArgs(
-                line_code=line_code,
-                line_no=line_no,
-                token_list=token_list,
-                error_list=error_list,
-            )
-            self.parse_line(parse_args)
-
-        return token_list, error_list
+            elif not manager.transform_success():
+                self.parse_variables(manager)

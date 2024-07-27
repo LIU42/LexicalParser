@@ -1,35 +1,69 @@
 import json
 import re
+import functools
+
+
+class Symbol:
+
+    def __init__(self, type, word):
+        self.type = type
+        self.word = word
+
+    def __len__(self):
+        return len(self.word)
+
+    @property
+    def is_token(self):
+        return self.type != 'spaces'
+
+
+class SymbolBuilder:
+
+    @staticmethod
+    def operators(word):
+        return Symbol('operators', word)
+
+    @staticmethod
+    def bounds(word):
+        return Symbol('bounds', word)
+
+    @staticmethod
+    def spaces(word):
+        return Symbol('spaces', word)
 
 
 class Token:
 
-    def __init__(self, line_no, index, type, word):
-        self.line_no = line_no
+    def __init__(self, line, index, type, word):
+        self.line = line
         self.index = index
         self.type = type
         self.word = word
 
     def __str__(self):
-        return f'<{self.line_no}, {self.index}, {self.type}, {self.word}>'
+        return f'<{self.line}, {self.index}, {self.type}, {self.word}>'
 
 
 class TokenBuilder:
 
     @staticmethod
-    def build(location, type, word):
+    def symbol(location, symbol):
+        return Token(location[0], location[1], symbol.type, symbol.word)
+
+    @staticmethod
+    def default(location, type, word):
         return Token(location[0], location[1], type, word)
 
 
 class Error:
 
-    def __init__(self, line_no, index, message):
-        self.line_no = line_no
+    def __init__(self, line, index, message):
+        self.line = line
         self.index = index
         self.message = message
 
     def __str__(self):
-        return f'Error at line: {self.line_no} column: {self.index} {self.message}'
+        return f'Error at line: {self.line} column: {self.index} {self.message}'
 
 
 class ErrorBuilder:
@@ -43,13 +77,51 @@ class ErrorBuilder:
         return Error(location[0], location[1], f'invalid {type}')
 
 
+class TransformElement:
+
+    def __init__(self, last, char, next):
+        self.last = last
+        self.char = char
+        self.next = next
+
+
 class AutomataGrammar:
 
-    def __init__(self, formulas, alias, start_symbol, final_symbol):
+    def __init__(self, formulas, alias, start, final):
         self.formulas = formulas
         self.alias = alias
-        self.start_symbol = start_symbol
-        self.final_symbol = final_symbol
+        self.start = start
+        self.final = final
+
+    def parse_formulas(self):
+        for formula in self.formulas:
+            if match := re.match(r'(.+?) -> `(.+?)` (.+)', formula):
+                last = match.group(1)
+                name = match.group(2)
+                next = match.group(3)
+
+                for char in self.alias[name]:
+                    yield TransformElement(last, char, next)
+
+            elif match := re.match(r'(.+?) -> `(.+?)`', formula):
+                last = match.group(1)
+                name = match.group(2)
+
+                for char in self.alias[name]:
+                    yield TransformElement(last, char, self.final)
+
+            elif match := re.match(r'(.+?) -> (.) (.+)', formula):
+                last = match.group(1)
+                char = match.group(2)
+                next = match.group(3)
+
+                yield TransformElement(last, char, next)
+
+            elif match := re.match(r'(.+?) -> (.)', formula):
+                last = match.group(1)
+                char = match.group(2)
+
+                yield TransformElement(last, char, self.final)
 
 
 class SymbolGrammar:
@@ -64,48 +136,42 @@ class SymbolGrammar:
 
 class GrammarLoader:
 
-    def __init__(self):
-        with open('grammars/grammar.json', mode='r', encoding='utf-8') as grammar_file:
-            self.grammar_dict = json.load(grammar_file)
-
-    def load_automata_grammar(self, token_type):
-        automata_grammar = AutomataGrammar(
-            self.grammar_dict[token_type]['formulas'],
-            self.grammar_dict['alias'],
-            self.grammar_dict[token_type]['start'],
-            self.grammar_dict[token_type]['final'],
-        )
-        return automata_grammar
-
-    def load_symbol_grammar(self):
-        symbol_grammar = SymbolGrammar(
-            self.grammar_dict['keywords'],
-            self.grammar_dict['operators'],
-            self.grammar_dict['bounds'],
-            self.grammar_dict['spaces'],
-            self.grammar_dict['constants']['specials'],
-        )
-        return symbol_grammar
-
-
-class FormulaParser:
+    @staticmethod
+    @functools.cache
+    def config():
+        with open('grammars/grammar.json', mode='r', encoding='utf-8') as grammar_json:
+            return json.load(grammar_json)
 
     @staticmethod
-    def parse(formula, grammar, nfa_transforms):
-        if match_result := re.match(r'(.+?) -> `(.+?)` (.+)', formula):
-            last_status, alias_name, next_status = match_result.groups()
-            for char in grammar.alias[alias_name]:
-                nfa_transforms.add_transform(last_status, char, next_status)
+    def constants():
+        config = GrammarLoader.config()
 
-        elif match_result := re.match(r'(.+?) -> `(.+?)`', formula):
-            last_status, alias_name = match_result.groups()
-            for char in grammar.alias[alias_name]:
-                nfa_transforms.add_transform(last_status, char, nfa_transforms.final_status)
+        return AutomataGrammar(
+            config['constants']['formulas'],
+            config['alias'],
+            config['constants']['start'],
+            config['constants']['final'],
+        )
 
-        elif match_result := re.match(r'(.+?) -> (.) (.+)', formula):
-            last_status, char, next_status = match_result.groups()
-            nfa_transforms.add_transform(last_status, char, next_status)
+    @staticmethod
+    def identifiers():
+        config = GrammarLoader.config()
 
-        elif match_result := re.match(r'(.+?) -> (.)', formula):
-            last_status, char = match_result.groups()
-            nfa_transforms.add_transform(last_status, char, nfa_transforms.final_status)
+        return AutomataGrammar(
+            config['identifiers']['formulas'],
+            config['alias'],
+            config['identifiers']['start'],
+            config['identifiers']['final'],
+        )
+
+    @staticmethod
+    def symbols():
+        config = GrammarLoader.config()
+
+        return SymbolGrammar(
+            config['keywords'],
+            config['operators'],
+            config['bounds'],
+            config['spaces'],
+            config['constants']['specials'],
+        )

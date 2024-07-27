@@ -1,76 +1,70 @@
-class NFATransforms:
+import functools
+from collections import defaultdict
 
-    def __init__(self, start_status, final_status):
-        self.transforms = dict()
-        self.all_characters = set()
-        self.start_status = start_status
-        self.final_status = final_status
 
-    def __getitem__(self, indices):
-        return self.transforms[indices[0]][indices[1]]
+class TransformTable:
 
-    def add_transform(self, last_status, char, next_status):
-        self.transforms.setdefault(last_status, dict()).setdefault(char, set()).add(next_status)
+    def __init__(self, start, final, default):
+        self.start = start
+        self.final = final
+        self.elements = defaultdict(lambda: defaultdict(default))
 
-    def get_characters(self):
-        if len(self.all_characters) > 0:
-            return self.all_characters
+    def __getitem__(self, location):
+        last = location[0]
+        char = location[1]
+        return self.elements[last][char]
 
-        for transforms in self.transforms.values():
-            for char in transforms.keys():
-                if char != 'ε':
-                    self.all_characters.add(char)
 
-        return self.all_characters
+class NFATransforms(TransformTable):
 
-    def get_epsilon_closure(self, status_set):
-        closure_status_set = status_set.copy()
-        status_buffer = closure_status_set.copy()
+    @functools.cached_property
+    def all_characters(self):
+        return {char for transform in self.elements.values() for char in transform.keys() if char != 'ε'}
+    
+    def closure(self, status_set):
+        status_closure = status_set.copy()
+        status_buffer = status_set.copy()
 
-        while True:
-            new_status_set = status_buffer.copy()
+        while len(status_buffer) > 0:
+            current_status = status_buffer.copy()
             status_buffer.clear()
 
-            for status in new_status_set:
-                if status not in self.transforms or 'ε' not in self.transforms[status]:
-                    continue
-                for next_status in self.transforms[status]['ε']:
-                    if next_status not in closure_status_set:
-                        status_buffer.add(next_status)
+            for status in current_status:
+                status_buffer = status_buffer.union(self.elements[status]['ε'])
 
-            if len(status_buffer) == 0:
-                break
-            closure_status_set = closure_status_set.union(status_buffer)
+            status_closure = status_closure.union(status_buffer)
 
-        return frozenset(closure_status_set)
-    
-    def get_move_status(self, status_set, search_char):
-        move_status_set = set()
+        return frozenset(status_closure)
 
-        for status in status_set:
-            if status not in self.transforms or search_char not in self.transforms[status]:
-                continue
-            for next_status in self.transforms[status][search_char]:
-                move_status_set.add(next_status)
+    def move(self, status, char):
+        return {next for last in status for next in self.elements[last][char]}
 
-        return move_status_set
-    
-    def get_next_status(self, status_set, search_char):
-        return self.get_epsilon_closure(self.get_move_status(status_set, search_char))
+    def next_status(self, status_set, char):
+        return self.closure(self.move(status_set, char))
 
 
-class DFATransforms:
+class DFATransforms(TransformTable):
 
-    def __init__(self):
-        self.transforms = dict()
-        self.start_status = 0
-        self.final_status = set()
+    def __setitem__(self, condition, destination):
+        last = condition[0]
+        char = condition[1]
+        self.elements[last][char] = destination
 
-    def __getitem__(self, indices):
-        return self.transforms[indices[0]][indices[1]]
-    
-    def add_transform(self, last_status, char, next_status):
-        self.transforms.setdefault(last_status, dict()).setdefault(char, next_status)
+    def exist(self, last, char):
+        return char in self.elements[last]
 
-    def is_transform_exist(self, last_status, char):
-        return last_status in self.transforms and char in self.transforms[last_status]
+
+class TransformsBuilder:
+
+    @staticmethod
+    def nfa(grammar):
+        nfa_transforms = NFATransforms(grammar.start, grammar.final, set)
+
+        for element in grammar.parse_formulas():
+            nfa_transforms.elements[element.last][element.char].add(element.next)
+
+        return nfa_transforms
+
+    @staticmethod
+    def dfa():
+        return DFATransforms(None, None, None)
