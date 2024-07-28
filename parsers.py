@@ -29,11 +29,11 @@ class StatusManager:
     def __init__(self, line, code):
         self.line = line
         self.code = code
-        self.automata = None
         self.index = 0
         self.token = ''
-        self.tokens = []
-        self.errors = []
+        self.token_list = []
+        self.error_list = []
+        self.automata = None
 
     @property
     def reached_end(self):
@@ -73,16 +73,16 @@ class LexicalParser:
         self.automatas = Automatas()
 
     def __call__(self, inputs):
-        tokens = []
-        errors = []
+        token_list = []
+        error_list = []
 
         for manager in self.generate_managers(inputs):
             self.parse_process(manager)
 
-            tokens.extend(manager.tokens)
-            errors.extend(manager.errors)
+            token_list.extend(manager.token_list)
+            error_list.extend(manager.error_list)
 
-        return tokens, errors
+        return token_list, error_list
 
     @staticmethod
     def generate_managers(inputs):
@@ -108,11 +108,11 @@ class LexicalParser:
         symbol = self.match_symbols(manager)
 
         if symbol is None:
-            manager.errors.append(ErrorBuilder.unexpected(manager.location))
+            manager.error_list.append(ErrorBuilder.unexpected(manager.location))
             manager.index += 1
         else:
             if symbol.is_token:
-                manager.tokens.append(TokenBuilder.symbol(manager.location, symbol))
+                manager.token_list.append(TokenBuilder.symbol(manager.location, symbol))
             manager.index += len(symbol)
 
     def token_valid(self, manager):
@@ -130,9 +130,9 @@ class LexicalParser:
         location = manager.location
 
         if manager.automata.reached_final and self.token_valid(manager):
-            manager.tokens.append(TokenBuilder.default(location, self.type_recheck(manager), manager.token))
+            manager.token_list.append(TokenBuilder.default(location, self.type_recheck(manager), manager.token))
         else:
-            manager.errors.append(ErrorBuilder.invalid(location, manager.automata.name))
+            manager.error_list.append(ErrorBuilder.invalid(location, manager.automata.name))
 
         manager.release_automata()
 

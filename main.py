@@ -2,14 +2,14 @@ from parsers import LexicalParser
 
 
 def lexical_parse(parser, source_path, result_path):
-    with open(source_path, mode='r') as sources:
-        tokens, errors = parser(sources.readlines())
+    with open(source_path, 'r') as sources:
+        token_list, error_list = parser(sources.readlines())
 
-    with open(result_path, mode='w') as results:
-        if len(errors) == 0:
-            results.writelines(f'{token}\n' for token in tokens)
+    with open(result_path, 'w') as results:
+        if len(error_list) == 0:
+            results.writelines(f'{token}\n' for token in token_list)
         else:
-            results.writelines(f'{error}\n' for error in errors)
+            results.writelines(f'{error}\n' for error in error_list)
 
 
 def main():

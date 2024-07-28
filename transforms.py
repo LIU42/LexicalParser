@@ -12,6 +12,7 @@ class TransformTable:
     def __getitem__(self, location):
         last = location[0]
         char = location[1]
+
         return self.elements[last][char]
 
 
@@ -30,7 +31,7 @@ class NFATransforms(TransformTable):
             status_buffer.clear()
 
             for status in current_status:
-                status_buffer = status_buffer.union(self.elements[status]['ε'])
+                status_buffer = status_buffer.union(self.elements[status]['ε'] - status_closure)
 
             status_closure = status_closure.union(status_buffer)
 
@@ -39,8 +40,8 @@ class NFATransforms(TransformTable):
     def move(self, status, char):
         return {next for last in status for next in self.elements[last][char]}
 
-    def next_status(self, status_set, char):
-        return self.closure(self.move(status_set, char))
+    def next_status(self, status, char):
+        return self.closure(self.move(status, char))
 
 
 class DFATransforms(TransformTable):
@@ -48,6 +49,7 @@ class DFATransforms(TransformTable):
     def __setitem__(self, condition, destination):
         last = condition[0]
         char = condition[1]
+
         self.elements[last][char] = destination
 
     def exist(self, last, char):
