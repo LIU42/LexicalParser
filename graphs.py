@@ -2,25 +2,25 @@ import functools
 from collections import defaultdict
 
 
-class TransformTable:
+class TransformGraph:
 
     def __init__(self, start, final, default):
         self.start = start
         self.final = final
-        self.elements = defaultdict(lambda: defaultdict(default))
+        self.edges = defaultdict(lambda: defaultdict(default))
 
     def __getitem__(self, location):
         last = location[0]
         char = location[1]
 
-        return self.elements[last][char]
+        return self.edges[last][char]
 
 
-class NFATransforms(TransformTable):
+class NFATransformGraph(TransformGraph):
 
     @functools.cached_property
     def all_characters(self):
-        return {char for transform in self.elements.values() for char in transform.keys() if char != 'ε'}
+        return {char for edge in self.edges.values() for char in edge.keys() if char != 'ε'}
     
     def closure(self, status_set):
         status_closure = status_set.copy()
@@ -31,42 +31,42 @@ class NFATransforms(TransformTable):
             status_buffer.clear()
 
             for status in current_status:
-                status_buffer = status_buffer.union(self.elements[status]['ε'] - status_closure)
+                status_buffer = status_buffer.union(self.edges[status]['ε'] - status_closure)
 
             status_closure = status_closure.union(status_buffer)
 
         return frozenset(status_closure)
 
     def move(self, status, char):
-        return {next for last in status for next in self.elements[last][char]}
+        return {next for last in status for next in self.edges[last][char]}
 
     def next_status(self, status, char):
         return self.closure(self.move(status, char))
 
 
-class DFATransforms(TransformTable):
+class DFATransformGraph(TransformGraph):
 
     def __setitem__(self, condition, destination):
         last = condition[0]
         char = condition[1]
 
-        self.elements[last][char] = destination
+        self.edges[last][char] = destination
 
     def exist(self, last, char):
-        return char in self.elements[last]
+        return char in self.edges[last]
 
 
-class TransformsBuilder:
+class TransformGraphsBuilder:
 
     @staticmethod
     def nfa(grammar):
-        nfa_transforms = NFATransforms(grammar.start, grammar.final, set)
+        nfa_transform_graph = NFATransformGraph(grammar.start, grammar.final, set)
 
-        for element in grammar.parse_formulas():
-            nfa_transforms.elements[element.last][element.char].add(element.next)
+        for edge in grammar.parse_formulas():
+            nfa_transform_graph.edges[edge.last][edge.char].add(edge.next)
 
-        return nfa_transforms
+        return nfa_transform_graph
 
     @staticmethod
     def dfa():
-        return DFATransforms(None, None, None)
+        return DFATransformGraph(None, None, None)

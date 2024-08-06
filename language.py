@@ -77,7 +77,7 @@ class ErrorBuilder:
         return Error(location[0], location[1], f'invalid {type}')
 
 
-class TransformElement:
+class TransformEdge:
 
     def __init__(self, last, char, next):
         self.last = last
@@ -101,27 +101,27 @@ class AutomataGrammar:
                 next = match.group(3)
 
                 for char in self.alias[name]:
-                    yield TransformElement(last, char, next)
+                    yield TransformEdge(last, char, next)
 
             elif match := re.match(r'(.+?) -> `(.+?)`', formula):
                 last = match.group(1)
                 name = match.group(2)
 
                 for char in self.alias[name]:
-                    yield TransformElement(last, char, self.final)
+                    yield TransformEdge(last, char, self.final)
 
             elif match := re.match(r'(.+?) -> (.) (.+)', formula):
                 last = match.group(1)
                 char = match.group(2)
                 next = match.group(3)
 
-                yield TransformElement(last, char, next)
+                yield TransformEdge(last, char, next)
 
             elif match := re.match(r'(.+?) -> (.)', formula):
                 last = match.group(1)
                 char = match.group(2)
 
-                yield TransformElement(last, char, self.final)
+                yield TransformEdge(last, char, self.final)
 
 
 class SymbolGrammar:
@@ -139,7 +139,7 @@ class GrammarLoader:
     @staticmethod
     @functools.cache
     def config():
-        with open('grammars/grammar.json', mode='r', encoding='utf-8') as grammar_json:
+        with open('grammars/grammar.json', 'r', encoding='utf-8') as grammar_json:
             return json.load(grammar_json)
 
     @staticmethod
