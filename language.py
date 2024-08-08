@@ -93,7 +93,7 @@ class AutomataGrammar:
         self.start = start
         self.final = final
 
-    def parse_formulas(self):
+    def parse_edges(self):
         for formula in self.formulas:
             if match := re.match(r'(.+?) -> `(.+?)` (.+)', formula):
                 last = match.group(1)

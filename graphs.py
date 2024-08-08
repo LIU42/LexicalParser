@@ -4,9 +4,9 @@ from collections import defaultdict
 
 class TransformGraph:
 
-    def __init__(self, start, final, default):
-        self.start = start
-        self.final = final
+    def __init__(self, default):
+        self.start = None
+        self.final = None
         self.edges = defaultdict(lambda: defaultdict(default))
 
     def __getitem__(self, location):
@@ -60,13 +60,16 @@ class TransformGraphsBuilder:
 
     @staticmethod
     def nfa(grammar):
-        nfa_transform_graph = NFATransformGraph(grammar.start, grammar.final, set)
+        nfa_transform_graph = NFATransformGraph(set)
 
-        for edge in grammar.parse_formulas():
+        for edge in grammar.parse_edges():
             nfa_transform_graph.edges[edge.last][edge.char].add(edge.next)
+
+        nfa_transform_graph.start = grammar.start
+        nfa_transform_graph.final = grammar.final
 
         return nfa_transform_graph
 
     @staticmethod
     def dfa():
-        return DFATransformGraph(None, None, None)
+        return DFATransformGraph(None)
