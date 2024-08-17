@@ -1,4 +1,4 @@
-from automata import FiniteAutomata
+from automaton import FiniteAutomaton
 
 from language import GrammarLoader
 from language import TokenBuilder
@@ -6,14 +6,14 @@ from language import ErrorBuilder
 from language import SymbolBuilder
 
 
-class Automatas:
+class Automatons:
 
     def __init__(self):
-        self.identifiers = FiniteAutomata('identifiers')
+        self.identifiers = FiniteAutomaton('identifiers')
         self.identifiers.build(GrammarLoader.identifiers())
         self.identifiers.reset()
 
-        self.constants = FiniteAutomata('constants')
+        self.constants = FiniteAutomaton('constants')
         self.constants.build(GrammarLoader.constants())
         self.constants.reset()
 
@@ -33,7 +33,7 @@ class StatusManager:
         self.token = ''
         self.token_list = []
         self.error_list = []
-        self.automata = None
+        self.automaton = None
 
     @property
     def reached_end(self):
@@ -52,7 +52,7 @@ class StatusManager:
         return self.code[self.index:]
 
     def transform_success(self):
-        transform_success = self.automata.transform(self.pending_char)
+        transform_success = self.automaton.transform(self.pending_char)
 
         if transform_success:
             self.token += self.pending_char
@@ -60,17 +60,17 @@ class StatusManager:
 
         return transform_success
 
-    def release_automata(self):
+    def release_automaton(self):
         self.token = ''
-        self.automata.reset()
-        self.automata = None
+        self.automaton.reset()
+        self.automaton = None
 
 
 class LexicalParser:
 
     def __init__(self):
         self.symbols = GrammarLoader.symbols()
-        self.automatas = Automatas()
+        self.automatons = Automatons()
 
     def __call__(self, inputs):
         token_list = []
@@ -116,32 +116,32 @@ class LexicalParser:
             manager.index += len(symbol)
 
     def token_valid(self, manager):
-        return manager.automata.name != 'constants' or self.match_symbols(manager)
+        return manager.automaton.name != 'constants' or self.match_symbols(manager)
 
     def type_recheck(self, manager):
-        if manager.automata.name == 'identifiers':
+        if manager.automaton.name == 'identifiers':
             if manager.token in self.symbols.keywords:
                 return 'keywords'
             if manager.token in self.symbols.constants_specials:
                 return 'constants'
-        return manager.automata.name
+        return manager.automaton.name
 
     def parse_variables(self, manager):
         location = manager.location
 
-        if manager.automata.reached_final and self.token_valid(manager):
+        if manager.automaton.reached_final and self.token_valid(manager):
             manager.token_list.append(TokenBuilder.default(location, self.type_recheck(manager), manager.token))
         else:
-            manager.error_list.append(ErrorBuilder.invalid(location, manager.automata.name))
+            manager.error_list.append(ErrorBuilder.invalid(location, manager.automaton.name))
 
-        manager.release_automata()
+        manager.release_automaton()
 
     def parse_process(self, manager):
         while not manager.reached_end:
-            if manager.automata is None:
-                manager.automata = self.automatas.allocate(manager.pending_char)
+            if manager.automaton is None:
+                manager.automaton = self.automatons.allocate(manager.pending_char)
 
-            if manager.automata is None:
+            if manager.automaton is None:
                 self.parse_symbols(manager)
 
             elif not manager.transform_success():

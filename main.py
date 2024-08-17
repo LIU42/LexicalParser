@@ -14,11 +14,11 @@ def lexical_parse(parser, source_path, output_path):
 
 def main():
     parser = LexicalParser()
-    lexical_parse(parser, 'sources/source1.txt', 'outputs/output1.txt')
-    lexical_parse(parser, 'sources/source2.txt', 'outputs/output2.txt')
-    lexical_parse(parser, 'sources/source3.txt', 'outputs/output3.txt')
-    lexical_parse(parser, 'sources/source4.txt', 'outputs/output4.txt')
-    lexical_parse(parser, 'sources/source5.txt', 'outputs/output5.txt')
+    lexical_parse(parser, 'tests/sources/source1.txt', 'tests/outputs/output1.txt')
+    lexical_parse(parser, 'tests/sources/source2.txt', 'tests/outputs/output2.txt')
+    lexical_parse(parser, 'tests/sources/source3.txt', 'tests/outputs/output3.txt')
+    lexical_parse(parser, 'tests/sources/source4.txt', 'tests/outputs/output4.txt')
+    lexical_parse(parser, 'tests/sources/source5.txt', 'tests/outputs/output5.txt')
 
 
 if __name__ == '__main__':

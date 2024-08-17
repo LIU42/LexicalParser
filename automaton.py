@@ -21,7 +21,7 @@ class StatusNumber:
         return {number for status, number in self.status_number.items() if find_status in status}
 
 
-class FiniteAutomata:
+class FiniteAutomaton:
 
     def __init__(self, name):
         self.name = name
