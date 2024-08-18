@@ -7,7 +7,6 @@ from language import SymbolBuilder
 
 
 class Automatons:
-
     def __init__(self):
         self.identifiers = FiniteAutomaton('identifiers')
         self.identifiers.build(GrammarLoader.identifiers())
@@ -25,7 +24,6 @@ class Automatons:
 
 
 class StatusManager:
-
     def __init__(self, line, code):
         self.line = line
         self.code = code
@@ -67,7 +65,6 @@ class StatusManager:
 
 
 class LexicalParser:
-
     def __init__(self):
         self.symbols = GrammarLoader.symbols()
         self.automatons = Automatons()

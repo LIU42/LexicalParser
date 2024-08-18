@@ -2,7 +2,6 @@ from graphs import TransformGraphsBuilder
 
 
 class StatusNumber:
-
     def __init__(self, init_status):
         self.status_number = {init_status: 0}
         self.status_count = 1
@@ -22,7 +21,6 @@ class StatusNumber:
 
 
 class FiniteAutomaton:
-
     def __init__(self, name):
         self.name = name
         self.status = None

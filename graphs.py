@@ -3,7 +3,6 @@ from collections import defaultdict
 
 
 class TransformGraph:
-
     def __init__(self, default):
         self.start = None
         self.final = None
@@ -17,7 +16,6 @@ class TransformGraph:
 
 
 class NFATransformGraph(TransformGraph):
-
     @functools.cached_property
     def all_characters(self):
         return {char for edge in self.edges.values() for char in edge.keys() if char != 'ε'}
@@ -45,7 +43,6 @@ class NFATransformGraph(TransformGraph):
 
 
 class DFATransformGraph(TransformGraph):
-
     def __setitem__(self, condition, destination):
         last = condition[0]
         char = condition[1]
@@ -57,7 +54,6 @@ class DFATransformGraph(TransformGraph):
 
 
 class TransformGraphsBuilder:
-
     @staticmethod
     def nfa(grammar):
         nfa_transform_graph = NFATransformGraph(set)

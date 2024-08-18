@@ -4,7 +4,6 @@ import functools
 
 
 class Symbol:
-
     def __init__(self, type, word):
         self.type = type
         self.word = word
@@ -18,7 +17,6 @@ class Symbol:
 
 
 class SymbolBuilder:
-
     @staticmethod
     def operators(word):
         return Symbol('operators', word)
@@ -33,7 +31,6 @@ class SymbolBuilder:
 
 
 class Token:
-
     def __init__(self, line, index, type, word):
         self.line = line
         self.index = index
@@ -45,7 +42,6 @@ class Token:
 
 
 class TokenBuilder:
-
     @staticmethod
     def symbol(location, symbol):
         return Token(location[0], location[1], symbol.type, symbol.word)
@@ -56,7 +52,6 @@ class TokenBuilder:
 
 
 class Error:
-
     def __init__(self, line, index, message):
         self.line = line
         self.index = index
@@ -67,7 +62,6 @@ class Error:
 
 
 class ErrorBuilder:
-
     @staticmethod
     def unexpected(location):
         return Error(location[0], location[1], 'unexpected symbols')
@@ -78,7 +72,6 @@ class ErrorBuilder:
 
 
 class TransformEdge:
-
     def __init__(self, last, char, next):
         self.last = last
         self.char = char
@@ -86,7 +79,6 @@ class TransformEdge:
 
 
 class AutomataGrammar:
-
     def __init__(self, formulas, alias, start, final):
         self.formulas = formulas
         self.alias = alias
@@ -125,7 +117,6 @@ class AutomataGrammar:
 
 
 class SymbolGrammar:
-
     def __init__(self, keywords, operators, bounds, spaces, constants_specials):
         self.keywords = keywords
         self.operators = operators
@@ -135,7 +126,6 @@ class SymbolGrammar:
 
 
 class GrammarLoader:
-
     @staticmethod
     @functools.cache
     def config():
