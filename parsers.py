@@ -1,19 +1,18 @@
-from automaton import FiniteAutomaton
+import grammars.loader as loader
 
-from language import GrammarLoader
-from language import TokenBuilder
-from language import ErrorBuilder
-from language import SymbolBuilder
+from grammars import Token
+from grammars import Error
+from grammars import Symbol
+
+from automatons import FiniteAutomaton
 
 
 class Automatons:
     def __init__(self):
-        self.identifiers = FiniteAutomaton('identifiers')
-        self.identifiers.build(GrammarLoader.identifiers())
+        self.identifiers = FiniteAutomaton('identifiers', loader.identifiers())
         self.identifiers.reset()
 
-        self.constants = FiniteAutomaton('constants')
-        self.constants.build(GrammarLoader.constants())
+        self.constants = FiniteAutomaton('constants', loader.constants())
         self.constants.reset()
 
     def allocate(self, char):
@@ -66,7 +65,7 @@ class StatusManager:
 
 class LexicalParser:
     def __init__(self):
-        self.symbols = GrammarLoader.symbols()
+        self.symbols = loader.symbols()
         self.automatons = Automatons()
 
     def __call__(self, inputs):
@@ -93,23 +92,23 @@ class LexicalParser:
 
     def match_symbols(self, manager):
         if symbol := self.match(manager, self.symbols.bounds):
-            return SymbolBuilder.bounds(symbol)
+            return Symbol.bounds(symbol)
 
         if symbol := self.match(manager, self.symbols.spaces):
-            return SymbolBuilder.spaces(symbol)
+            return Symbol.spaces(symbol)
 
         if symbol := self.match(manager, self.symbols.operators):
-            return SymbolBuilder.operators(symbol)
+            return Symbol.operators(symbol)
 
     def parse_symbols(self, manager):
         symbol = self.match_symbols(manager)
 
         if symbol is None:
-            manager.error_list.append(ErrorBuilder.unexpected(manager.location))
+            manager.error_list.append(Error.unexpected(manager.location))
             manager.index += 1
         else:
             if symbol.is_token:
-                manager.token_list.append(TokenBuilder.symbol(manager.location, symbol))
+                manager.token_list.append(Token.symbol(manager.location, symbol))
             manager.index += len(symbol)
 
     def token_valid(self, manager):
@@ -127,9 +126,9 @@ class LexicalParser:
         location = manager.location
 
         if manager.automaton.reached_final and self.token_valid(manager):
-            manager.token_list.append(TokenBuilder.default(location, self.type_recheck(manager), manager.token))
+            manager.token_list.append(Token.default(location, self.type_recheck(manager), manager.token))
         else:
-            manager.error_list.append(ErrorBuilder.invalid(location, manager.automaton.name))
+            manager.error_list.append(Error.invalid(location, manager.automaton.name))
 
         manager.release_automaton()
 

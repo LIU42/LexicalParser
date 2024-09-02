@@ -1,12 +1,12 @@
+import collections
 import functools
-from collections import defaultdict
 
 
 class TransformGraph:
     def __init__(self, default):
         self.start = None
         self.final = None
-        self.edges = defaultdict(lambda: defaultdict(default))
+        self.edges = collections.defaultdict(lambda: collections.defaultdict(default))
 
     def __getitem__(self, location):
         last = location[0]
@@ -16,6 +16,9 @@ class TransformGraph:
 
 
 class NFATransformGraph(TransformGraph):
+    def __init__(self, default):
+        super().__init__(default)
+
     @functools.cached_property
     def all_characters(self):
         return {char for edge in self.edges.values() for char in edge.keys() if char != 'ε'}
@@ -41,21 +44,8 @@ class NFATransformGraph(TransformGraph):
     def next_status(self, status, char):
         return self.closure(self.move(status, char))
 
-
-class DFATransformGraph(TransformGraph):
-    def __setitem__(self, condition, destination):
-        last = condition[0]
-        char = condition[1]
-
-        self.edges[last][char] = destination
-
-    def exist(self, last, char):
-        return char in self.edges[last]
-
-
-class TransformGraphsBuilder:
     @staticmethod
-    def nfa(grammar):
+    def build_nfa(grammar):
         nfa_transform_graph = NFATransformGraph(set)
 
         for edge in grammar.parse_edges():
@@ -66,6 +56,20 @@ class TransformGraphsBuilder:
 
         return nfa_transform_graph
 
+
+class DFATransformGraph(TransformGraph):
+    def __init__(self, default):
+        super().__init__(default)
+
+    def __setitem__(self, condition, destination):
+        last = condition[0]
+        char = condition[1]
+
+        self.edges[last][char] = destination
+
+    def exist(self, last, char):
+        return char in self.edges[last]
+
     @staticmethod
-    def dfa():
+    def build_dfa():
         return DFATransformGraph(None)

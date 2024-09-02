@@ -1,6 +1,4 @@
-import json
 import re
-import functools
 
 
 class Symbol:
@@ -15,8 +13,6 @@ class Symbol:
     def is_token(self):
         return self.type != 'spaces'
 
-
-class SymbolBuilder:
     @staticmethod
     def operators(word):
         return Symbol('operators', word)
@@ -40,8 +36,6 @@ class Token:
     def __str__(self):
         return f'<{self.line}, {self.index}, {self.type}, {self.word}>'
 
-
-class TokenBuilder:
     @staticmethod
     def symbol(location, symbol):
         return Token(location[0], location[1], symbol.type, symbol.word)
@@ -60,8 +54,6 @@ class Error:
     def __str__(self):
         return f'Error at line: {self.line} column: {self.index} {self.message}'
 
-
-class ErrorBuilder:
     @staticmethod
     def unexpected(location):
         return Error(location[0], location[1], 'unexpected symbols')
@@ -123,45 +115,3 @@ class SymbolGrammar:
         self.bounds = bounds
         self.spaces = spaces
         self.constants_specials = constants_specials
-
-
-class GrammarLoader:
-    @staticmethod
-    @functools.cache
-    def config():
-        with open('grammars/grammar.json', 'r', encoding='utf-8') as grammar_json:
-            return json.load(grammar_json)
-
-    @staticmethod
-    def constants():
-        config = GrammarLoader.config()
-
-        return AutomataGrammar(
-            config['constants']['formulas'],
-            config['alias'],
-            config['constants']['start'],
-            config['constants']['final'],
-        )
-
-    @staticmethod
-    def identifiers():
-        config = GrammarLoader.config()
-
-        return AutomataGrammar(
-            config['identifiers']['formulas'],
-            config['alias'],
-            config['identifiers']['start'],
-            config['identifiers']['final'],
-        )
-
-    @staticmethod
-    def symbols():
-        config = GrammarLoader.config()
-
-        return SymbolGrammar(
-            config['keywords'],
-            config['operators'],
-            config['bounds'],
-            config['spaces'],
-            config['constants']['specials'],
-        )
