@@ -1,5 +1,4 @@
-from automatons.status import StatusNumber
-
+from automatons.graphs import StatusNumber
 from automatons.graphs import NFATransformGraph
 from automatons.graphs import DFATransformGraph
 
@@ -10,7 +9,7 @@ def ensure(nfa_transform_graph):
     status_number = StatusNumber(init_status)
     status_buffer = {init_status}
 
-    dfa_transform_graph = DFATransformGraph.build_dfa()
+    dfa_transform_graph = DFATransformGraph.build()
 
     while len(status_buffer) > 0:
         current_status = status_buffer.copy()
@@ -35,4 +34,4 @@ def ensure(nfa_transform_graph):
 
 
 def dfa_transforms(grammar):
-    return ensure(NFATransformGraph.build_nfa(grammar))
+    return ensure(NFATransformGraph.build(grammar))

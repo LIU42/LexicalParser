@@ -6,40 +6,40 @@ from grammars.elements import SymbolGrammar
 
 
 @functools.cache
-def load_config():
-    with open('configs/grammar.json', 'r', encoding='utf-8') as grammar_json:
-        return json.load(grammar_json)
+def load_configs():
+    with open('configs/grammar.json', 'r', encoding='utf-8') as configs:
+        return json.load(configs)
 
 
 def constants():
-    config = load_config()
+    configs = load_configs()
 
     return AutomataGrammar(
-        config['constants']['formulas'],
-        config['alias'],
-        config['constants']['start'],
-        config['constants']['final'],
+        configs['constants']['formulas'],
+        configs['alias'],
+        configs['constants']['start'],
+        configs['constants']['final'],
     )
 
 
 def identifiers():
-    config = load_config()
+    configs = load_configs()
 
     return AutomataGrammar(
-        config['identifiers']['formulas'],
-        config['alias'],
-        config['identifiers']['start'],
-        config['identifiers']['final'],
+        configs['identifiers']['formulas'],
+        configs['alias'],
+        configs['identifiers']['start'],
+        configs['identifiers']['final'],
     )
 
 
 def symbols():
-    config = load_config()
+    configs = load_configs()
 
     return SymbolGrammar(
-        config['keywords'],
-        config['operators'],
-        config['bounds'],
-        config['spaces'],
-        config['constants']['specials'],
+        configs['keywords'],
+        configs['operators'],
+        configs['bounds'],
+        configs['spaces'],
+        configs['constants']['specials'],
     )

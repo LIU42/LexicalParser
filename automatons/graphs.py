@@ -2,6 +2,25 @@ import collections
 import functools
 
 
+class StatusNumber:
+    def __init__(self, init_status):
+        self.status_number = {init_status: 0}
+        self.status_count = 1
+
+    def __getitem__(self, status):
+        return self.status_number[status]
+
+    def __contains__(self, status):
+        return status in self.status_number
+
+    def add(self, status):
+        self.status_number[status] = self.status_count
+        self.status_count += 1
+
+    def find(self, find_status):
+        return {number for status, number in self.status_number.items() if find_status in status}
+
+
 class TransformGraph:
     def __init__(self, default):
         self.start = None
@@ -16,9 +35,6 @@ class TransformGraph:
 
 
 class NFATransformGraph(TransformGraph):
-    def __init__(self, default):
-        super().__init__(default)
-
     @functools.cached_property
     def all_characters(self):
         return {char for edge in self.edges.values() for char in edge.keys() if char != 'ε'}
@@ -45,7 +61,7 @@ class NFATransformGraph(TransformGraph):
         return self.closure(self.move(status, char))
 
     @staticmethod
-    def build_nfa(grammar):
+    def build(grammar):
         nfa_transform_graph = NFATransformGraph(set)
 
         for edge in grammar.parse_edges():
@@ -58,9 +74,6 @@ class NFATransformGraph(TransformGraph):
 
 
 class DFATransformGraph(TransformGraph):
-    def __init__(self, default):
-        super().__init__(default)
-
     def __setitem__(self, condition, destination):
         last = condition[0]
         char = condition[1]
@@ -71,5 +84,5 @@ class DFATransformGraph(TransformGraph):
         return char in self.edges[last]
 
     @staticmethod
-    def build_dfa():
+    def build():
         return DFATransformGraph(None)

@@ -1,4 +1,4 @@
-from parsers import LexicalParser
+from lexical import LexicalParser
 
 
 def lexical_parse(parser, source_path, output_path):
